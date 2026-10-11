@@ -7,6 +7,7 @@ import { DocumentController } from './controllers/documentController.js';
 import { storageService } from './services/storageService.js';
 
 import authRoutes from './routes/authRoutes.js';
+import { SupportController } from './controllers/supportController.js';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.get('/api/stats', DocumentController.getDashboardStats);
 app.get('/api/samples', DocumentController.getSampleDocuments);
 app.post('/api/samples/load', DocumentController.loadSampleDocument);
 app.get('/api/health', DocumentController.getHealthAndStatus);
+app.post('/api/support', SupportController.submitInquiry);
 
 // Root route
 app.get('/', (req: Request, res: Response) => {

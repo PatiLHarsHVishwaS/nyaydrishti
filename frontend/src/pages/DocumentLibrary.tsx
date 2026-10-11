@@ -24,11 +24,13 @@ export const DocumentLibrary: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const fetchDocs = async () => {
+  const urlSearch = searchParams.get('search') || '';
+
+  const fetchDocs = async (query: string = searchQuery) => {
     setLoading(true);
     try {
       const res = await api.listDocuments({
-        search: searchQuery || undefined,
+        search: query.trim() || undefined,
         caseType: caseTypeFilter !== 'all' ? caseTypeFilter : undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
       });
@@ -44,9 +46,19 @@ export const DocumentLibrary: React.FC = () => {
     fetchDocs();
   }, [caseTypeFilter, statusFilter]);
 
+  // The top search bar (available on every page) navigates to /library?search=...
+  // When that changes while this page is already open, show the new term and reload the list.
+  const [lastUrlSearch, setLastUrlSearch] = useState(urlSearch);
+  useEffect(() => {
+    if (urlSearch === lastUrlSearch) return;
+    setLastUrlSearch(urlSearch);
+    setSearchQuery(urlSearch);
+    fetchDocs(urlSearch);
+  }, [urlSearch]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchDocs();
+    fetchDocs(searchQuery);
   };
 
   const handleDelete = async (id: string, name: string, e: React.MouseEvent) => {

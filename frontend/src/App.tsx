@@ -7,6 +7,7 @@ import { DocumentUpload } from './pages/DocumentUpload';
 import { AnalysisResults } from './pages/AnalysisResults';
 import { DocumentLibrary } from './pages/DocumentLibrary';
 import { SettingsInfo } from './pages/SettingsInfo';
+import { ContactSupport } from './pages/ContactSupport';
 
 import { AuthProvider } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
@@ -29,6 +30,7 @@ export const App: React.FC = () => {
             <Route path="/analysis/:id" element={<AnalysisResults />} />
             <Route path="/library" element={<DocumentLibrary />} />
             <Route path="/settings" element={<SettingsInfo />} />
+            <Route path="/support" element={<ContactSupport />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

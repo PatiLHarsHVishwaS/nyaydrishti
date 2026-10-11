@@ -102,7 +102,7 @@ export const DashboardLayout: React.FC = () => {
               Check our documentation or contact support.
             </p>
             <Link
-              to="/settings"
+              to="/support"
               className="inline-block mt-1 text-[11px] font-medium text-[#14243D] hover:underline"
             >
               Contact Support

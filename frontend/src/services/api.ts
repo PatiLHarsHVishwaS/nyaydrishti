@@ -188,6 +188,17 @@ export const api = {
     return data;
   },
 
+  async submitSupportInquiry(inquiry: { name: string; email: string; subject: string; message: string }): Promise<{ message: string; referenceId: string }> {
+    const res = await fetch(`${API_BASE}/support`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(inquiry),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not submit your inquiry.');
+    return data;
+  },
+
   async getSystemStatus(): Promise<SystemStatus> {
     const res = await fetch(`${API_BASE}/health`);
     if (!res.ok) throw new Error('Failed to check system health');
