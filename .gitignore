@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production & Build outputs
+dist/
+**/dist/
+
+# User uploaded documents and temp files
+uploads/
+**/uploads/
+
+# Environment & Secret files (preserve examples)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs
+*.log
+**/*.log
+
+# Operating System & IDE
+.DS_Store
+**/.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
