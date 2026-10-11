@@ -39,7 +39,6 @@ export const DashboardLayout: React.FC = () => {
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Upload Document', path: '/upload', icon: Upload },
     { label: 'My Documents', path: '/library', icon: BookOpen },
-    { label: 'Reports', path: '/library?view=reports', icon: FileText },
     { label: 'Settings', path: '/settings', icon: SettingsIcon },
   ];
 
