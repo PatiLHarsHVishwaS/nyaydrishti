@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { storageService } from '../services/storageService.js';
 import { TextExtractor } from '../services/textExtractor.js';
 import { AIService } from '../services/aiService.js';
+import { analysisProgress } from '../services/analysisProgress.js';
 import { QuestionAnsweringService } from '../services/questionAnswering.js';
 import { LEGAL_DISCLAIMER } from '../services/judgmentPipeline.js';
 import { IDocumentRecord } from '../models/Document.js';
@@ -217,6 +218,7 @@ export class DocumentController {
         return;
       }
       analysesInProgress.add(id);
+      const onProgress = analysisProgress.start(id);
 
       try {
         await ensurePages(doc);
@@ -233,12 +235,15 @@ export class DocumentController {
           pageSource: doc.pageSource,
           emptyPages: doc.emptyPages,
           overrideGeminiApiKey: apiKeyHeader,
+          onProgress,
         });
 
+        onProgress({ stage: 'saving', detail: 'Saving the report to the database' });
         doc.analysis = analysis;
         doc.status = 'analyzed';
         doc.errorMessage = undefined;
         const updated = await storageService.save(doc);
+        analysisProgress.finish(id, 'done', 'Analysis complete');
 
         res.json({
           message: 'Document analyzed successfully.',
@@ -250,6 +255,7 @@ export class DocumentController {
     } catch (err: any) {
       console.error('[DocumentController.analyzeDocument] Error:', err);
       if (req.params.id) {
+        analysisProgress.finish(req.params.id, 'error', err.message || 'Analysis pipeline failure');
         const doc = await storageService.getById(req.params.id);
         if (doc) {
           doc.status = 'error';
@@ -353,6 +359,13 @@ export class DocumentController {
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Failed to retrieve document.' });
     }
+  }
+
+  /**
+   * Live progress of a running analysis (null when none is running or recently finished)
+   */
+  public static getAnalysisProgress(req: Request, res: Response): void {
+    res.json({ progress: analysisProgress.get(req.params.id) });
   }
 
   /**

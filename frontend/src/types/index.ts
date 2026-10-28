@@ -124,6 +124,19 @@ export interface LegalAnalysisResult {
   };
 }
 
+export type AnalysisStage = 'preparing' | 'reading' | 'writing' | 'verifying' | 'saving' | 'done' | 'error';
+
+/** Live progress of a running analysis (GET /api/documents/:id/progress). */
+export interface AnalysisProgress {
+  stage: AnalysisStage;
+  detail: string;
+  sectionsDone: number;
+  sectionsTotal: number;
+  startedAt: number;
+  updatedAt: number;
+  elapsedMs: number;
+}
+
 export interface DocumentRecord {
   id: string;
   originalName: string;

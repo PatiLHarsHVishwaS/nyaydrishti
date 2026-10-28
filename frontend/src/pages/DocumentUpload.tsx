@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { DocumentRecord, SampleDocumentItem } from '../types';
+import { AnalysisProgressPanel } from '../components/AnalysisProgressPanel';
 
 export const DocumentUpload: React.FC = () => {
   const navigate = useNavigate();
@@ -279,6 +280,7 @@ export const DocumentUpload: React.FC = () => {
                   )}
                 </button>
               </div>
+              {isAnalyzing && <AnalysisProgressPanel documentId={uploadedDoc.id} />}
             </div>
           )}
         </div>

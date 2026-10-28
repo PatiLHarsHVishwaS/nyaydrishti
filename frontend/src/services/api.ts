@@ -1,4 +1,4 @@
-import { AuthResponse, DashboardStats, DocumentRecord, LegalAnalysisResult, QuestionAnswerResponse, SampleDocumentItem, SystemStatus, User } from '../types';
+import { AnalysisProgress, AuthResponse, DashboardStats, DocumentRecord, LegalAnalysisResult, QuestionAnswerResponse, SampleDocumentItem, SystemStatus, User } from '../types';
 
 const API_BASE = '/api';
 
@@ -207,6 +207,12 @@ export const api = {
 
   getOriginalDownloadUrl(id: string): string {
     return `${API_BASE}/documents/${id}/download`;
+  },
+
+  async getAnalysisProgress(id: string): Promise<{ progress: AnalysisProgress | null }> {
+    const res = await fetch(`${API_BASE}/documents/${id}/progress`);
+    if (!res.ok) throw new Error('Failed to retrieve analysis progress');
+    return res.json();
   },
 
   getAnalysisExportUrl(id: string, format: 'json' | 'markdown' = 'json'): string {

@@ -8,6 +8,7 @@ import {
 import { NvidiaClient, NvidiaContextLengthError, NvidiaRequestError, ChatMessage } from './nvidiaClient.js';
 import { PageText, PageSource } from './textExtractor.js';
 import { renderPagesWithMarkers, sanitizePages, verifyQuote } from './sourceGrounding.js';
+import { ProgressReporter } from './analysisProgress.js';
 
 /**
  * Detailed judgment analysis with NVIDIA hosted models.
@@ -72,7 +73,8 @@ export class JudgmentPipeline {
     pages: PageText[],
     pageSource: PageSource,
     emptyPages: number[],
-    originalFilename: string
+    originalFilename: string,
+    onProgress: ProgressReporter = () => {}
   ): Promise<LegalAnalysisResult> {
     const started = Date.now();
     const pageMap = new Map(pages.map((p) => [p.page, p.text]));
@@ -87,9 +89,25 @@ export class JudgmentPipeline {
     // 2. Map
     const failedChunks: string[] = [];
     const chunkNotes: any[] = [];
+    const unit = marker === 'PAGE' ? 'pages' : 'segments';
+    const reading = new Set<string>();
+    let sectionsDone = 0;
+    const reportReading = () =>
+      onProgress({
+        stage: 'reading',
+        sectionsDone,
+        sectionsTotal: chunks.length,
+        detail: reading.size ? `Reading ${unit} ${Array.from(reading).join(', ')}` : 'Reading the judgment',
+      });
+    reportReading();
     await this.runPool(chunks, config.nvidiaConcurrency, async (chunk, i) => {
+      reading.add(chunk.label);
+      reportReading();
       const notes = await this.extractChunkNotes(chunk, marker, originalFilename, `${i + 1}/${chunks.length}`, failedChunks);
       chunkNotes.push(...notes);
+      reading.delete(chunk.label);
+      sectionsDone++;
+      reportReading();
     });
     if (chunkNotes.length === 0) {
       throw new Error(`NVIDIA analysis failed for every chunk (${failedChunks.join(', ')}).`);
@@ -99,9 +117,11 @@ export class JudgmentPipeline {
 
     // 3. Consolidate oversized notes
     const limitations: string[] = [];
+    onProgress({ detail: 'Combining the notes from every section' });
     notes = await this.consolidateIfNeeded(notes, pageMap, limitations);
 
     // 4. Synthesis (two calls so long reports are not cut off by the output limit)
+    onProgress({ stage: 'writing', detail: 'Writing the summary, facts, arguments, reasoning and final order' });
     const notesJson = JSON.stringify(notes);
     const header = `Document: "${originalFilename}". Total ${marker.toLowerCase()}s: ${pages.length}. Page references use ${marker} numbers.\nCONSOLIDATED NOTES (extracted from the full judgment, with page references):\n${notesJson}`;
 
@@ -157,7 +177,9 @@ Never add precedents or provisions that are not in the notes.`,
     ]);
 
     // 5. Verify final order against the original operative text
+    onProgress({ stage: 'verifying', detail: 'Re-reading the last pages to confirm the final order' });
     const finalOutcome = await this.verifyFinalOrder(partB?.finalOutcome, pages, pageMap, marker);
+    onProgress({ detail: 'Checking every quote against the original text' });
 
     // 6. Ground every point and assemble the report
     const uncertainClaims: Array<{ claim: string; reason: string }> = this.asArray(partB?.uncertainClaims)

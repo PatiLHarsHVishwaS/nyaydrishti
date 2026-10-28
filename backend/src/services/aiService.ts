@@ -5,6 +5,7 @@ import { DeterministicLegalExtractor } from './deterministicExtractor.js';
 import { NvidiaClient } from './nvidiaClient.js';
 import { JudgmentPipeline, LEGAL_DISCLAIMER } from './judgmentPipeline.js';
 import { PageText, PageSource, TextExtractor } from './textExtractor.js';
+import { ProgressReporter } from './analysisProgress.js';
 
 export interface AnalysisInput {
   text: string;
@@ -13,6 +14,7 @@ export interface AnalysisInput {
   pageSource?: PageSource;
   emptyPages?: number[];
   overrideGeminiApiKey?: string;
+  onProgress?: ProgressReporter;
 }
 
 export class AIService {
@@ -40,6 +42,7 @@ export class AIService {
    */
   public static async analyzeDocument(input: AnalysisInput): Promise<LegalAnalysisResult> {
     const { text, originalFilename, overrideGeminiApiKey } = input;
+    const onProgress: ProgressReporter = input.onProgress || (() => {});
     const fallbackNotes: string[] = [];
 
     if (NvidiaClient.isConfigured()) {
@@ -47,7 +50,7 @@ export class AIService {
         const pages = input.pages?.length ? input.pages : TextExtractor.segmentText(text);
         const pageSource: PageSource = input.pages?.length ? input.pageSource || 'pdf' : 'segment';
         console.log(`[AIService] Initiating NVIDIA analysis for ${originalFilename} using model ${config.nvidiaModel}`);
-        return await JudgmentPipeline.analyze(pages, pageSource, input.emptyPages || [], originalFilename);
+        return await JudgmentPipeline.analyze(pages, pageSource, input.emptyPages || [], originalFilename, onProgress);
       } catch (error: any) {
         console.warn(`[AIService] NVIDIA analysis failed: ${error.message}. Trying fallback provider.`);
         fallbackNotes.push(`NVIDIA AI analysis failed (${error.message || 'API error'}), so a fallback engine produced this result. It is less detailed and has no verified page references.`);
@@ -59,6 +62,7 @@ export class AIService {
     if (effectiveApiKey && effectiveApiKey.trim().length > 0) {
       try {
         console.log(`[AIService] Initiating Gemini analysis for ${originalFilename} using model ${config.geminiModel}`);
+        onProgress({ stage: 'writing', detail: 'NVIDIA was unavailable; writing the report with the Gemini fallback' });
         const result = await this.analyzeWithGemini(text, originalFilename, effectiveApiKey);
         if (text.length > 60000) {
           fallbackNotes.push(
@@ -79,6 +83,7 @@ export class AIService {
     }
 
     console.log(`[AIService] No AI provider succeeded or configured. Using Local Rule-Based Engine (Demo Mode).`);
+    onProgress({ stage: 'writing', detail: 'Writing the report with the rule-based engine' });
     const fallback = DeterministicLegalExtractor.analyze(text, originalFilename);
     fallback.summary.limitations.push(...fallbackNotes);
     return fallback;

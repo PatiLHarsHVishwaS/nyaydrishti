@@ -20,6 +20,7 @@ import {
 import { api } from '../services/api';
 import { DocumentRecord, LegalAnalysisResult, LegalProvision } from '../types';
 import { DetailedReportView, AskJudgmentPanel, PageRef } from '../components/DetailedReportView';
+import { AnalysisProgressPanel } from '../components/AnalysisProgressPanel';
 
 export const AnalysisResults: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -303,14 +304,7 @@ export const AnalysisResults: React.FC = () => {
         </div>
       </div>
 
-      {isBusy && (
-        <div className="p-3 rounded-md bg-[#FDF6E7] border border-[#F0E2C2] text-xs text-[#7A5A12] flex items-center space-x-2">
-          <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
-          <span>
-            Analysing the judgment page by page. Long judgments can take several minutes; you can leave this page open and the report will appear when ready.
-          </span>
-        </div>
-      )}
+      {isBusy && <AnalysisProgressPanel documentId={documentRecord.id} />}
       {error && (
         <div className="p-3 rounded-md bg-[#FBEBEB] border border-[#F3CFCF] text-xs text-[#C44B4B] flex items-center justify-between">
           <span>{error}</span>

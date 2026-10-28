@@ -60,11 +60,15 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 // Database Connection & Server Initialization
 async function startServer() {
-  console.log('[NyayaDrishti Server] Attempting connection to MongoDB at:', config.mongoUri);
+  // Hide the password part of the URI (e.g. MongoDB Atlas "user:password@") from the logs
+  console.log('[NyayaDrishti Server] Attempting connection to MongoDB at:', config.mongoUri.replace(/\/\/([^:/@]+):[^@]*@/, '//$1:****@'));
+
+  // Fail fast instead of queueing queries for 10s when MongoDB is unreachable, so the in-memory fallback kicks in at once
+  mongoose.set('bufferCommands', false);
 
   try {
     await mongoose.connect(config.mongoUri, {
-      serverSelectionTimeoutMS: 3000,
+      serverSelectionTimeoutMS: 15000,
     });
     console.log('[NyayaDrishti Server] Connected to MongoDB successfully.');
   } catch (err: any) {
